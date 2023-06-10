@@ -59,44 +59,50 @@ def evaluate_noise():
     '''
     return distance, X_noise, X_rebuild
 
-
-def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_width = 6, cal_snr=False):
+#TODO: write a version of this funciton that computes just SNR without autoencoder scores and is compatible with running via makefile
+def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_width = 6, cal_snr=False, model_dir = 'model/denoising_autoencoder.pkl'):
     traces, snrs = [], []
-    exclude = []
+    # exclude = []
 
     for i in tqdm(peaks.index):
         rt = peaks.loc[i, 'rt']
+        x = np.linspace(rt - length, rt + length, 50)
+
         pic = peaks.loc[i, 'pic_label']
         pic = pics[pic]
-        
-        x = np.linspace(rt - length, rt + length, 50)
-        x0, y0 = pic[:,0], pic[:,2]
-        y = np.interp(x, x0, y0)
-        y = y / np.max(y)
-        traces.append(y)
-        
-        if max(y[24], y[25]) < np.max(y[int(25-min_width/2):int(25+min_width/2)]):
-            exclude.append(i)
-        elif np.min(y[int(25-min_width/2):int(25+min_width/2)]) < 0.3:
-            exclude.append(i)
+        if not np.any(np.isnan(np.array(pic))):
+            
+            
+            x0, y0 = pic[:,0], pic[:,2]
+            y = np.interp(x, x0, y0)
+            y = y / np.max(y)
+            traces.append(y)
+            
+            # if max(y[24], y[25]) < np.max(y[int(25-min_width/2):int(25+min_width/2)]):
+            #     exclude.append(i)
+            # elif np.min(y[int(25-min_width/2):int(25+min_width/2)]) < 0.3:
+            #     exclude.append(i)
+            # else:
+            #     pass
+            
+            if cal_snr:
+                pks, sigs, snrs_ = peaks_detection(y, np.arange(1, 30), 0)
+                if (len(snrs_) == 0) or (np.min(np.abs(np.array(pks) - 25)) > 3):
+                    snr = 0
+                else:
+                    wh = np.argmin(np.abs(np.array(pks) - 25))
+                    snr = snrs_[wh]
+                snrs.append(snr)
         else:
-            pass
-        
-        if cal_snr:
-            pks, sigs, snrs_ = peaks_detection(y, np.arange(1, 30), 0)
-            if (len(snrs_) == 0) or (np.min(np.abs(np.array(pks) - 25)) > 3):
-                snr = 0
-            else:
-                wh = np.argmin(np.abs(np.array(pks) - 25))
-                snr = snrs_[wh]
-            snrs.append(snr)
+            traces.append(np.array([0.]*len(x)))
+            snrs.append(0)
             
     snrs = np.array(snrs)
     traces = np.array(traces)
-    exclude = np.array(exclude)
+    # exclude = np.array(exclude)
     
     X = traces
-    autoencoder = tf.keras.models.load_model('model/denoising_autoencoder.pkl')
+    autoencoder = tf.keras.models.load_model(model_dir)
     X_rebuild = autoencoder.predict(X)
     X_rebuild = np.reshape(X_rebuild, [-1, 50])
     
@@ -105,7 +111,7 @@ def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_
     
     scores = t.pdf(distance, params[0], loc = params[1], scale = params[2])
     scores = -np.log10(scores)
-    scores[exclude] = 0
+    # scores[exclude] = 0
     scores[worse] = 0
         
     
