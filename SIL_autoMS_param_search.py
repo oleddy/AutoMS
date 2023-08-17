@@ -6,8 +6,6 @@ min_width = 0 #setting any value >0 for minimum peak width appears to exclude so
 lengths = [10, 20, 40, 60, 100]
 ppms = [10, 20, 40]
 
-
-#TODO: add multiprocessing
 def add_scores(length, ppm, mzml_file, peaks, peaks_output):
     model_dir = 'model/denoising_autoencoder.pkl'
     result, snrs = AutoMS_External(mzml_file, peaks, min_width = min_width, length = length, model_dir = model_dir, ppm = ppm)
