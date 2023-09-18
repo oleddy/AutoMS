@@ -46,7 +46,7 @@ getEIC <- function(file, peaks, ppm){
 }
 '''
 
-def AutoMS_External(file, peaks, length=14, params=(8.5101, 1.6113, 0.1950), min_width = 6, model_dir = 'model/denoising_autoencoder.pkl', ppm = 10):
+def AutoMS_External(file, peaks, length=14, params=(8.5101, 1.6113, 0.1950), min_width = 6, model_dir = 'model/denoising_autoencoder.pkl', ppm = 40):
     """
         1. Install R >= 3.4.1 and R <= 4.1.1
         2. Set R_HOME environment variable
