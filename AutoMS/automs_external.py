@@ -16,7 +16,7 @@ import rpy2.robjects.pandas2ri as pandas2ri
 from AutoMS import peakeval
 
 '''
-To get rpy2 to work, you may need to add the following lines to your .bash_profile:
+To get rpy2 to work, you may need to add the following lines to your .bash_profile (Mac OS):
 export DYLD_LIBRARY_PATH="/Library/Frameworks/R.framework/Libraries:$DYLD_LIBRARY_PATH"
 export PKG_CONFIG_PATH="/usr/X11/lib/pkgconfig:$PKG_CONFIG_PATH"
 '''
@@ -33,7 +33,7 @@ getEIC <- function(file, peaks, ppm){
   raw_data <- readMSData(files = file, mode = "onDisk")
   rtr <- cbind(peaks$rt1, peaks$rt2)
   mzr <- cbind(peaks$mz - (peaks$mz*tol), peaks$mz + (peaks$mz*tol))
-  chr_raw <- chromatogram(raw_data, mz = mzr, rt = rtr)
+  chr_raw <- chromatogram(raw_data, mz = mzr, rt = rtr, missing = 0)
   chr_raw <- chr_raw@.Data
   output <- lapply(chr_raw, function(s) {
       if (sum(!is.na(s@intensity)) < 2){
