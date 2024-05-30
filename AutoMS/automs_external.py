@@ -27,6 +27,7 @@ if (!'xcms' %in% installed.packages()){
   suppressMessages(BiocManager::install('xcms'))
 }
 library(xcms)
+library(MSnbase)
 
 getEIC <- function(file, peaks, ppm){
   tol = ppm/1000000.0
