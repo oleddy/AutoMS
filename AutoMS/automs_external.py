@@ -8,60 +8,35 @@ Modified by Owen Leddy
 """
 
 import numpy as np
-
-import rpy2.robjects as robjects
-import rpy2.robjects.numpy2ri as numpy2ri
-import rpy2.robjects.pandas2ri as pandas2ri
+import pandas as pd
 
 from AutoMS import peakeval
 
-'''
-To get rpy2 to work, you may need to add the following lines to your .bash_profile (Mac OS):
-export DYLD_LIBRARY_PATH="/Library/Frameworks/R.framework/Libraries:$DYLD_LIBRARY_PATH"
-export PKG_CONFIG_PATH="/usr/X11/lib/pkgconfig:$PKG_CONFIG_PATH"
-'''
+import pyopenms as oms
 
-rcodes  =  '''
-if (!'xcms' %in% installed.packages()){
-  suppressMessages(install.packages('BiocManager'))
-  suppressMessages(BiocManager::install('xcms'))
-}
-library(xcms)
-library(MSnbase)
+def getXIC(file, peaks, ppm, length):
+    run = oms.MSExperiment()
+    oms.MzMLFile().load(file, run)
+    peak_outputs = [pd.DataFrame(columns = ['rt', 'mz', 'intensity']) for i in range(len(peaks))]
 
-getEIC <- function(file, peaks, ppm){
-  tol = ppm/1000000.0
-  raw_data <- readMSData(files = file, mode = "onDisk")
-  rtr <- cbind(peaks$rt1, peaks$rt2)
-  mzr <- cbind(peaks$mz - (peaks$mz*tol), peaks$mz + (peaks$mz*tol))
-  chr_raw <- chromatogram(raw_data, mz = mzr, rt = rtr, missing = 0)
-  chr_raw <- chr_raw@.Data
-  output <- lapply(chr_raw, function(s) {
-      if (sum(!is.na(s@intensity)) < 2){
-        cbind(s@rtime, mean(s@mz), 0.0)
-      }else{
-        cbind(s@rtime, mean(s@mz), approx(s@intensity, n=length(s@intensity))$y)
-      }
-    })
-  return(output)
-}
-'''
+    for spectrum in run:
+        rt = spectrum.getRT()
+        for i, peak in peaks.iterrows():
+            if (rt <= peak['rt'] + length) and (rt >= peak['rt'] - length):
+                tolerance = peak['mz']*(ppm/1e6)
+                index = spectrum.findHighestInWindow(peak['mz'], tolerance, tolerance)
+                if index == -1:
+                    intensity = 0.
+                else:
+                    intensity = spectrum[index].getIntensity()
+                new_row = pd.DataFrame({'rt' : [rt], 'mz' : [peak['mz']], 'intensity' : [intensity]})
+                peak_outputs[i] = pd.concat([peak_outputs[i], new_row])
+    return peak_outputs    
 
 def AutoMS_External(file, peaks, length=14, params=(8.5101, 1.6113, 0.1950), min_width = 6, model_dir = 'model/denoising_autoencoder.pkl', ppm = 40):
-    """
-        1. Install R >= 3.4.1 and R <= 4.1.1
-        2. Set R_HOME environment variable
-        3. Install XCMS in R
-    """
-    numpy2ri.activate()
-    pandas2ri.activate()
-    
-    robjects.r(rcodes)
-    getEIC = robjects.globalenv['getEIC']
-    
-    pics_xcms = getEIC(file, peaks, ppm)
+    pics_xcms = getXIC(file, peaks, ppm, length)
     pics_xcms = [np.array(x) for x in pics_xcms]
-    
+
     pics_label = []
     for i, pic in enumerate(pics_xcms):
         rt, mz, intensity = peaks.loc[i, ['rt', 'mz', 'intensity']]

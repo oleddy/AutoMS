@@ -14,7 +14,7 @@ from math import ceil
 from functools import partial
 import multiprocessing as mp
 
-mp.set_start_method('fork') #prevents a file not found error (idk why)
+# mp.set_start_method('fork') #prevents a file not found error (idk why)
 
 #breaks down a large dataframe of MS1 peaks into smaller chunks to avoid running out of memory by running AutoMS on all at once
 def chunk(df, chunksize = 4096):
@@ -40,6 +40,10 @@ def AutoMS_score(unmatched_peaks, inf_mzml_file, outfile, ppm = 40, length = 40,
     result.to_csv(outfile, index = False)
 
 if __name__ == '__main__':
+    try:
+        mp.set_start_method('spawn')
+    except RuntimeError:
+        pass
     parser = argparse.ArgumentParser()
     parser.add_argument('-u', help = 'input (unpaired peaks file)', required = True)
     parser.add_argument('-i', help = 'infected MZML file', required = True)

@@ -112,7 +112,8 @@ def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_
     scores = t.pdf(distance, params[0], loc = params[1], scale = params[2])
     scores = -np.log10(scores)
     # scores[exclude] = 0
-    scores[worse] = 0
+    if len(worse) > 0:
+        scores[worse] = 0
         
     
     '''
