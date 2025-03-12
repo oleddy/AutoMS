@@ -16,6 +16,7 @@ from fitter import Fitter
 from scipy.stats import t
 from sklearn.preprocessing import MinMaxScaler
 from AutoMS.mspd_original import peaks_detection
+import tf_keras
 
 
 def evaluate_noise():
@@ -43,7 +44,10 @@ def evaluate_noise():
     false = np.array(false)
     X_noise = X[false, :]
     
-    autoencoder = tf.keras.models.load_model('model/denoising_autoencoder.pkl')
+    try:
+        autoencoder = tf.keras.models.load_model(model_dir)
+    except AttributeError:
+        autoencoder = tf_keras.models.load_model(model_dir)    
     X_rebuild = autoencoder.predict(X_noise)
     X_rebuild = np.reshape(X_rebuild, [-1, 50])
 
@@ -102,7 +106,10 @@ def evaluate_peaks(peaks, pics, length=14, params=(8.5101, 1.6113, 0.1950), min_
     # exclude = np.array(exclude)
     
     X = traces
-    autoencoder = tf.keras.models.load_model(model_dir)
+    try:
+        autoencoder = tf.keras.models.load_model(model_dir)
+    except AttributeError:
+        autoencoder = tf_keras.models.load_model(model_dir)
     X_rebuild = autoencoder.predict(X)
     X_rebuild = np.reshape(X_rebuild, [-1, 50])
     
