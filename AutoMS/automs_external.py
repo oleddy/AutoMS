@@ -21,16 +21,17 @@ def getXIC(file, peaks, ppm, length):
 
     for spectrum in run:
         rt = spectrum.getRT()
-        for i, peak in peaks.iterrows():
-            if (rt <= peak['rt'] + length) and (rt >= peak['rt'] - length):
-                tolerance = peak['mz']*(ppm/1e6)
-                index = spectrum.findHighestInWindow(peak['mz'], tolerance, tolerance)
-                if index == -1:
-                    intensity = 0.
-                else:
-                    intensity = spectrum[index].getIntensity()
-                new_row = pd.DataFrame({'rt' : [rt], 'mz' : [peak['mz']], 'intensity' : [intensity]})
-                peak_outputs[i] = pd.concat([peak_outputs[i], new_row])
+        if spectrum.getMSLevel() == 1:
+            for i, peak in peaks.iterrows():
+                if (rt <= peak['rt'] + length) and (rt >= peak['rt'] - length):
+                    tolerance = peak['mz']*(ppm/1e6)
+                    index = spectrum.findHighestInWindow(peak['mz'], tolerance, tolerance)
+                    if index == -1:
+                        intensity = 0.
+                    else:
+                        intensity = spectrum[index].getIntensity()
+                    new_row = pd.DataFrame({'rt' : [rt], 'mz' : [peak['mz']], 'intensity' : [intensity]})
+                    peak_outputs[i] = pd.concat([peak_outputs[i], new_row])
     return peak_outputs    
 
 def AutoMS_External(file, peaks, length=14, params=(8.5101, 1.6113, 0.1950), min_width = 6, model_dir = 'model/denoising_autoencoder.pkl', ppm = 40):
